@@ -50,22 +50,10 @@ class PyDESeq2(LinearModelBase):
         dds = DeseqDataSet(
             adata=self.adata, design_factors=processed_covars, refit_cooks=True, inference=inference, **kwargs
         )
-        # workaround code to insert design array
-        des_mtx_cols = dds.obsm["design_matrix"].columns
-        dds.obsm["design_matrix"] = self.design
-        if dds.obsm["design_matrix"].shape[1] == len(des_mtx_cols):
-            dds.obsm["design_matrix"].columns = des_mtx_cols.copy()
 
         dds.deseq2()
         self.dds = dds
 
-    # TODO: PyDeseq2 doesn't support arbitrary designs and contrasts yet
-    # see https://github.com/owkin/PyDESeq2/issues/213
-
-    # Therefore these functions are overridden in a way to make it work with PyDESeq2,
-    # ingoring the inconsistency of function signatures. Once arbitrary design
-    # matrices and contrasts are supported by PyDEseq2, we can fully support the
-    # Linear model interface.
     def _test_single_contrast(self, contrast: list[str], alpha=0.05, **kwargs) -> pd.DataFrame:  # type: ignore
         """Conduct a specific test and returns a Pandas DataFrame.
 
@@ -85,11 +73,3 @@ class PyDESeq2(LinearModelBase):
         res_df.index.name = "variable"
         res_df = res_df.reset_index()
         return res_df
-
-    def cond(self, **kwargs) -> ndarray:
-        raise NotImplementedError(
-            "PyDESeq2 currently doesn't support arbitrary contrasts, see https://github.com/owkin/PyDESeq2/issues/213"
-        )
-
-    def contrast(self, column: str, baseline: str, group_to_compare: str) -> tuple[str, str, str]:  # type: ignore
-        return (column, group_to_compare, baseline)
